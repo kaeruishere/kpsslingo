@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPSS Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg: #0A0F1C;
+            --surface: #131722;
+            --surface-hover: #1A1F2C;
+            --primary: #6B5CF6;
+            --primary-dim: rgba(107, 92, 246, 0.15);
+            --border: #2A3040;
+            --text: #F3F4F6;
+            --text-muted: #9CA3AF;
+            --danger: #EF4444;
+            --success: #10B981;
+            --radius: 16px;
+            --font: 'Inter', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: var(--font); 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+
+        /* Sidebar */
+        .sidebar { 
+            width: 280px; 
+            background: var(--surface); 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            padding: 32px 24px; 
+        }
+        
+        .logo { 
+            font-size: 20px; 
+            font-weight: 800; 
+            color: white; 
+            margin-bottom: 48px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            letter-spacing: -0.5px;
+        }
+        .logo span { color: var(--primary); }
+
+        .nav-group { 
+            font-size: 11px; 
+            text-transform: uppercase; 
+            letter-spacing: 1.2px; 
+            color: var(--text-muted); 
+            font-weight: 700; 
+            margin-bottom: 16px; 
+            margin-top: 24px; 
+        }
+
+        .nav-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 14px 16px; 
+            border-radius: 12px; 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-weight: 500; 
+            font-size: 14px; 
+            margin-bottom: 8px; 
+        }
+        .nav-item .material-icons-round { font-size: 20px; }
+        .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+        .nav-item.active { 
+            background: var(--primary-dim); 
+            color: var(--primary); 
+            font-weight: 600; 
+            border-left: 3px solid var(--primary); 
+        }
+
+        /* Main Content */
+        .main { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 48px 64px; 
+            position: relative; 
+        }
+
+        .header { margin-bottom: 40px; }
+        .header h1 { font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+        .header p { color: var(--text-muted); font-size: 15px; }
+
+        /* Views */
+        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* Cards & Forms */
+        .card { 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            padding: 32px; 
+            margin-bottom: 24px; 
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+        .card-header h3 { font-size: 18px; font-weight: 700; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { 
+            display: block; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: var(--text-muted); 
+            margin-bottom: 8px; 
+        }
+        input, select, textarea { 
+            width: 100%; 
+            background: var(--bg); 
+            border: 1px solid var(--border); 
+            border-radius: 10px; 
+            padding: 14px 16px; 
+            color: white; 
+            font-family: var(--font); 
+            font-size: 14px; 
+            outline: none; 
+            transition: border-color 0.2s; 
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+        textarea { resize: vertical; min-height: 100px; }
+        
+        .code-input {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: #A7F3D0;
+        }
+
+        /* Buttons */
+        .btn { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            padding: 14px 24px; 
+            border-radius: 10px; 
+            font-weight: 600; 
+            font-size: 14px; 
+            border: none; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-family: var(--font); 
+        }
+        .btn-primary { 
+            background: var(--primary); 
+            color: white; 
+        }
+        .btn-primary:hover { 
+            background: #5A4AF0; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 14px var(--primary-dim);
+        }
+        .btn-danger { 
+            background: rgba(239, 68, 68, 0.1); 
+            color: var(--danger); 
+        }
+        .btn-danger:hover { 
+            background: var(--danger); 
+            color: white; 
+        }
+        .btn-icon {
+            padding: 8px;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+        }
+        .btn-icon:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        /* Lists */
+        .list-item { 
+            background: var(--bg); 
+            border: 1px solid var(--border); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            transition: border-color 0.2s;
+        }
+        .list-item:hover { border-color: var(--text-muted); }
+        
+        .list-info h4 { font-size: 16px; margin-bottom: 8px; line-height: 1.4; }
+        .list-meta { 
+            display: flex; 
+            gap: 12px; 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            font-family: var(--mono); 
+            align-items: center;
+        }
+        .badge { 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 10px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+        .badge.blue { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+        .badge.purple { background: var(--primary-dim); color: #A78BFA; }
+        .badge.green { background: rgba(16, 185, 129, 0.15); color: #34D399; }
+        .badge.orange { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
+        .badge.red { background: rgba(239, 68, 68, 0.15); color: #F87171; }
+
+        .hidden { display: none !important; }
+
+        /* Toast Container */
+        .toast-container { position: fixed; bottom: 32px; right: 32px; z-index: 1000; }
+        .toast { 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            color: white; 
+            padding: 16px 24px; 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin-top: 12px; 
+            font-weight: 500; 
+            font-size: 14px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        .toast.success .material-icons-round { color: var(--success); }
+        .toast.error .material-icons-round { color: var(--danger); }
+        
+        @keyframes toastIn { 
+            from { transform: translateX(100%); opacity: 0; } 
+            to { transform: translateX(0); opacity: 1; } 
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">
+            <span class="material-icons-round">bolt</span>
+            KPSS Admin
+        </div>
+
+        <div class="nav-group">Modüller</div>
+        
+        <div class="nav-item active" onclick="switchView('view-questions', this)">
+            <span class="material-icons-round">quiz</span>
+            Soru Bankası
+        </div>
+
+        <div class="nav-item" onclick="switchView('view-json', this)">
+            <span class="material-icons-round">data_object</span>
+            Toplu Ekleme
+        </div>
+        
+        <div class="nav-item" onclick="switchView('view-notifications', this)">
+            <span class="material-icons-round">campaign</span>
+            Bildirim İçerikleri
+        </div>
+
+        <div style="flex: 1"></div>
+        
+        <div style="padding-top: 24px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons-round" style="font-size: 16px; color: var(--success);">wifi</span>
+                Firebase: Active
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        
+        <!-- ======================= -->
+        <!-- VIEW: QUESTIONS         -->
+        <!-- ======================= -->
+        <div id="view-questions" class="view active">
+            <div class="header">
+                <h1>Soru Bankası</h1>
+                <p>Uygulamadaki tüm soruları yönetin veya yeni sorular ekleyin.</p>
+            </div>
+
+            <!-- Yeni Soru Ekleme Formu -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Yeni Soru Ekle</h3>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Ders Select</label>
+                        <select id="qDersId" onchange="loadKonular()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Konu Select</label>
+                        <select id="qKonuId"></select>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Soru Tipi</label>
+                        <select id="qType" onchange="toggleQuestionType()">
+                            <option value="multiple_choice">Çoktan Seçmeli</option>
+                            <option value="fill_blank">Boşluk Doldurma</option>
+                            <option value="flashcard">Flashcard (Doğru/Yanlış vb)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Zorluk</label>
+                        <select id="qDiff">
+                            <option value="1">1 - Kolay</option>
+                            <option value="2">2 - Orta</option>
+                            <option value="3">3 - Zor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Soru Metni</label>
+                    <textarea id="qText" placeholder="Örn: Aşağıdakilerden hangisi..."></textarea>
+                </div>
+
+                <!-- Çoktan Seçmeli Alanı -->
+                <div id="qMultipleChoiceArea">
+                    <div class="grid-2">
+                        <div class="form-group"><label>A Şıkkı</label><input type="text" id="qOpA"></div>
+                        <div class="form-group"><label>B Şıkkı</label><input type="text" id="qOpB"></div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group"><label>C Şıkkı</label><input type="text" id="qOpC"></div>
+                        <div class="form-group"><label>D Şıkkı</label><input type="text" id="qOpD"></div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group"><label>E Şıkkı</label><input type="text" id="qOpE"></div>
+                        <div class="form-group">
+                            <label>Doğru Cevap (MC)</label>
+                            <select id="qAnswerMc">
+                                <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Düz Metin Cevap Alanı -->
+                <div id="qTextArea" class="hidden">
+                    <div class="form-group">
+                        <label>Doğru Cevabı (Tam Metin)</label>
+                        <input type="text" id="qAnswerText" placeholder="Boşluk doldurma veya Flashcard için cevap">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="addQuestion()" style="width: 100%;">
+                    <span class="material-icons-round">add_circle</span>
+                    Soruyu Kaydet
+                </button>
+            </div>
+
+            <!-- Soruları Listeleme -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Sisteme Kayıtlı Sorular (Son Eklenenler)</h3>
+                    <button class="btn btn-icon" onclick="loadQuestions()" title="Yenile">
+                        <span class="material-icons-round">refresh</span>
+                    </button>
+                </div>
+                <div id="questionsList">
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">Yükleniyor...</div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ======================= -->
+        <!-- VIEW: JSON BULK         -->
+        <!-- ======================= -->
+        <div id="view-json" class="view">
+            <div class="header">
+                <h1>Toplu Soru Ekleme</h1>
+                <p>Soruları JSON array olarak yapıştırarak topluca veritabanına gönderebilirsiniz.</p>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>JSON Metni</h3>
+                </div>
+                <div class="form-group">
+                    <textarea class="code-input" id="jsonBulkText" style="min-height: 400px; color: #34D399; background: #05070a; border-radius: 12px;" placeholder='[
+  {
+    "ders_id": "tarih",
+    "konu_id": "islamiyet_oncesi",
+    "type": "multiple_choice",
+    "zorluk": 1,
+    "soru": "Hükümdara yönetme yetkisinin Tanrı tarafından verilmesine ne denir?",
+    "secenekler": {"A": "Kut", "B": "Kurultay", "C": "Töre", "D": "Balbal", "E": "Toy"},
+    "cevap": "A"
+  }
+]'></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="importJsonArray()" style="width: 100%;">
+                    <span class="material-icons-round">publish</span>
+                    JSON Verisini Aktar
+                </button>
+            </div>
+        </div>
+
+        <!-- ======================= -->
+        <!-- VIEW: NOTIFICATIONS     -->
+        <!-- ======================= -->
+        <div id="view-notifications" class="view">
+            <div class="header">
+                <h1>Bildirim İçerikleri</h1>
+                <p>Anlık bildirimlere (Push Notification) tıklandığında açılacak dinamik detay sayfalarını (Content) hazırlayın. Bu sayfayı oluşturduktan sonra, sayfaya ait `Doc ID` bilgisini Firebase Console'dan bildirim gönderirken `contentId` key'i olarak girmelisiniz.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Yeni İçerik Oluştur</h3>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Görsel Tema (Type)</label>
+                        <select id="nType">
+                            <option value="announcement">Duyuru (Announcement)</option>
+                            <option value="update">Güncelleme (Update)</option>
+                            <option value="exam">Sınav (Exam)</option>
+                            <option value="motivation">Motivasyon (Motivation)</option>
+                            <option value="content">Yeni İçerik (Content)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Başlık (Title)</label>
+                        <input type="text" id="nTitle" placeholder="Kutlamalar Başladı!">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ana Metin (Body)</label>
+                    <textarea id="nBody" placeholder="Hemen şimdi 500 bedava soru çözme hakkı kazandınız..."></textarea>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Buton Metni (CTA Label) - Opsiyonel</label>
+                        <input type="text" id="nCtaLabel" placeholder="Hemen Keşfet">
+                    </div>
+                    <div class="form-group">
+                        <label>Buton Linki (CTA Url) - Opsiyonel</label>
+                        <input type="url" id="nCtaUrl" placeholder="https://...">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ekstra Datası (Meta) - Opsiyonel JSON</label>
+                    <textarea class="code-input" id="nMeta" placeholder='{
+  "Sınav Tarihi": "15 Haziran 2025",
+  "Promosyon Kodu": "KPSS2025"
+}'></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="addNotification()" style="width: 100%;">
+                    <span class="material-icons-round">send</span>
+                    Bildirim İçeriğini Yarat
+                </button>
+            </div>
+
+            <!-- Bildirimleri Listeleme -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Mevcut Bildirim İçerikleri</h3>
+                    <button class="btn btn-icon" onclick="loadNotifications()" title="Yenile">
+                        <span class="material-icons-round">refresh</span>
+                    </button>
+                </div>
+                <div id="notificationsList">
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">Yükleniyor...</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+
+    <!-- ======================= -->
+    <!-- LOGIC SCRIPT            -->
+    <!-- ======================= -->
+    <script>
+        // 1. Firebase Initialization
+        const firebaseConfig = {
+            apiKey: "AIzaSyChRcMo4jQAZB8ol5hG4orDf5z48VfdSnY",
+            authDomain: "kaeru-kpss.firebaseapp.com",
+            projectId: "kaeru-kpss",
+            storageBucket: "kaeru-kpss.firebasestorage.app",
+            messagingSenderId: "735538348786",
+            appId: "1:735538348786:web:0504b5cbec780bae15066b"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 2. Navigation Logic
+        function switchView(viewId, element) {
+            // Update Menu
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            // Update Views
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+
+            // Initial loads
+            if(viewId === 'view-questions') loadQuestions();
+            if(viewId === 'view-notifications') loadNotifications();
+        }
+
+        // 3. UI Helpers
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            toast.innerHTML = `<span class="material-icons-round">${icon}</span> ${message}`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) reverse';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // ==========================================
+        // MODULE: QUESTIONS
+        // ==========================================
+        function toggleQuestionType() {
+            const type = document.getElementById('qType').value;
+            const mcArea = document.getElementById('qMultipleChoiceArea');
+            const textArea = document.getElementById('qTextArea');
+
+            if(type === 'multiple_choice') {
+                mcArea.classList.remove('hidden');
+                textArea.classList.add('hidden');
+            } else {
+                mcArea.classList.add('hidden');
+                textArea.classList.remove('hidden');
+            }
+        }
+
+        async function addQuestion() {
+            const dersId = document.getElementById('qDersId').value.trim();
+            const konuId = document.getElementById('qKonuId').value.trim();
+            const qType = document.getElementById('qType').value;
+            const qDiff = parseInt(document.getElementById('qDiff').value);
+            const qText = document.getElementById('qText').value.trim();
+
+            if(!dersId || !konuId || !qText) {
+                return showToast('Ders ID, Konu ID ve Soru Metni zorunludur.', 'error');
+            }
+
+            const payload = {
+                ders_id: dersId,
+                konu_id: konuId,
+                type: qType,
+                zorluk: qDiff,
+                soru: qText,
+                eklenme_tarihi: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if(qType === 'multiple_choice') {
+                payload.cevap = document.getElementById('qAnswerMc').value;
+                payload.secenekler = {
+                    A: document.getElementById('qOpA').value,
+                    B: document.getElementById('qOpB').value,
+                    C: document.getElementById('qOpC').value,
+                    D: document.getElementById('qOpD').value,
+                    E: document.getElementById('qOpE').value,
+                };
+            } else {
+                payload.cevap = document.getElementById('qAnswerText').value;
+            }
+
+            try {
+                await db.collection('sorular').add(payload);
+                showToast('Soru başarıyla kaydedildi!');
+                document.getElementById('qText').value = ''; // clear only text to allow rapid adding
+                loadQuestions();
+            } catch (error) {
+                showToast(`Hata: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadQuestions() {
+            const listEl = document.getElementById('questionsList');
+            listEl.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Yükleniyor...</div>';
+            
+            try {
+                // Fetching the last 20 questions
+                const snapshot = await db.collection('sorular')
+                    .orderBy('eklenme_tarihi', 'desc')
+                    .limit(20)
+                    .get();
+
+                listEl.innerHTML = '';
+                
+                if(snapshot.empty) {
+                    listEl.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Hiç soru bulunamadı.</div>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    let badgeClass = data.type === 'multiple_choice' ? 'blue' : (data.type === 'fill_blank' ? 'orange' : 'purple');
+                    
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <div class="list-info">
+                            <h4>${data.soru}</h4>
+                            <div class="list-meta">
+                                <span class="badge ${badgeClass}">${data.type.replace('_', ' ')}</span>
+                                <span><span class="material-icons-round" style="font-size:14px; vertical-align:text-bottom;">book</span> ${data.ders_id} | ${data.konu_id}</span>
+                                <span><span class="material-icons-round" style="font-size:14px; vertical-align:text-bottom;">bolt</span> Lvl ${data.zorluk}</span>
+                                <span>ID: ${doc.id}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger btn-icon" onclick="deleteQuestion('${doc.id}')" title="Soruyu Sil">
+                            <span class="material-icons-round">delete</span>
+                        </button>
+                    `;
+                    listEl.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+                if (err.message.includes('requires an index')) {
+                     showToast('Sorgu için index gerekiyor. Firebase konsoldan index oluşturun.', 'error');
+                } else {
+                     showToast(`Liste Yüklenemedi: ${err.message}`, 'error');
+                }
+            }
+        }
+
+        async function deleteQuestion(id) {
+            if(!confirm("Yazık lan soruya, emeğin var, cidden silmek istiyor musun?")) return;
+            try {
+                await db.collection('sorular').doc(id).delete();
+                showToast('Soru uzayın derinliklerine yollandı.');
+                loadQuestions();
+            } catch (err) {
+                showToast(`Silme Hatası: ${err.message}`, 'error');
+            }
+        }
+
+
+        // ==========================================
+        // MODULE: NOTIFICATIONS (CONTENT)
+        // ==========================================
+        async function addNotification() {
+            const nType = document.getElementById('nType').value;
+            const nTitle = document.getElementById('nTitle').value.trim();
+            const nBody = document.getElementById('nBody').value.trim();
+            const nCtaLabel = document.getElementById('nCtaLabel').value.trim();
+            const nCtaUrl = document.getElementById('nCtaUrl').value.trim();
+            const nMetaRaw = document.getElementById('nMeta').value.trim();
+
+            if(!nTitle || !nBody) {
+                return showToast('Başlık ve Ana Metin zorunludur.', 'error');
+            }
+
+            let metaObj = {};
+            if (nMetaRaw) {
+                try {
+                    metaObj = JSON.parse(nMetaRaw);
+                } catch(e) {
+                    return showToast('Meta nesnesi geçerli bir JSON formatında olmalıdır!', 'error');
+                }
+            }
+
+            const payload = {
+                type: nType,
+                title: nTitle,
+                body: nBody,
+                ctaLabel: nCtaLabel || null,
+                ctaUrl: nCtaUrl || null,
+                meta: metaObj,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                // Add new document
+                const docRef = await db.collection('notifications_content').add(payload);
+                showToast(`İçerik başarıyla eklendi!`);
+                // Clear important fields
+                document.getElementById('nTitle').value = '';
+                document.getElementById('nBody').value = '';
+                loadNotifications();
+                
+                // Show prompt with Content ID useful for copying
+                prompt("DİKKAT: Firebase Console üzerinden bildirim atarkan payload 'data' içerisine 'contentId' keyi ile BU DEĞERİ gireceksin. Kopyala:", docRef.id);
+            } catch (err) {
+                showToast(`Hata: ${err.message}`, 'error');
+            }
+        }
+
+        async function loadNotifications() {
+            const listEl = document.getElementById('notificationsList');
+            listEl.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Yükleniyor...</div>';
+            
+            try {
+                // Fetching notifications
+                const snapshot = await db.collection('notifications_content')
+                    .orderBy('createdAt', 'desc')
+                    .limit(10)
+                    .get();
+
+                listEl.innerHTML = '';
+                
+                if(snapshot.empty) {
+                    listEl.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Sistemde kayıtlı bildirim içeriği yok.</div>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    
+                    let badgeColor = 'blue';
+                    if(data.type === 'exam') badgeColor = 'red';
+                    if(data.type === 'motivation') badgeColor = 'orange';
+                    if(data.type === 'announcement') badgeColor = 'purple';
+                    if(data.type === 'update') badgeColor = 'green';
+                    
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <div class="list-info">
+                            <div style="margin-bottom: 8px;">
+                                <span class="badge ${badgeColor}" style="margin-right: 8px;">${data.type}</span>
+                                <strong>${data.title}</strong>
+                            </div>
+                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">${(data.body || '').substring(0,80)}...</p>
+                            <div class="list-meta">
+                                <span style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; user-select: all; cursor: pointer;" title="Content ID">ID: <strong>${doc.id}</strong></span>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger btn-icon" onclick="deleteNotification('${doc.id}')" title="İçeriği Sil">
+                            <span class="material-icons-round">delete</span>
+                        </button>
+                    `;
+                    listEl.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+                if (err.message.includes('requires an index')) {
+                     showToast('Sorgu için index gerekiyor. Firebase konsoldan index oluşturun.', 'error');
+                } else {
+                     showToast(`Liste Yüklenemedi: ${err.message}`, 'error');
+                }
+            }
+        }
+
+        async function deleteNotification(id) {
+            if(!confirm("İçeriği silerseniz, mevcut bildirimler boş sayfa açar. Devam edilsin mi?")) return;
+            try {
+                await db.collection('notifications_content').doc(id).delete();
+                showToast('İçerik imha edildi.');
+                loadNotifications();
+            } catch (err) {
+                showToast(`Silme Hatası: ${err.message}`, 'error');
+            }
+        }
+
+        async function initData() {
+            try {
+                const snapshot = await db.collection('dersler').get();
+                const dersSelect = document.getElementById('qDersId');
+                dersSelect.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const opt = document.createElement('option');
+                    opt.value = doc.id;
+                    opt.textContent = doc.data().baslik || doc.id;
+                    dersSelect.appendChild(opt);
+                });
+                loadKonular();
+            } catch(e) {
+                console.error("Dersler yüklenirken hata:", e);
+            }
+        }
+
+        async function loadKonular() {
+            const dersId = document.getElementById('qDersId').value;
+            if(!dersId) return;
+            const konuSelect = document.getElementById('qKonuId');
+            konuSelect.innerHTML = '';
+            try {
+                const snapshot = await db.collection('dersler')
+                                         .doc(dersId)
+                                         .collection('konular')
+                                         .orderBy('sira')
+                                         .get();
+                snapshot.forEach(doc => {
+                    const opt = document.createElement('option');
+                    opt.value = doc.id;
+                    opt.textContent = doc.data().baslik || doc.id;
+                    konuSelect.appendChild(opt);
+                });
+            } catch(e) {
+                console.error("Konular yüklenirken hata:", e);
+            }
+        }
+
+        async function importJsonArray() {
+            const raw = document.getElementById('jsonBulkText').value.trim();
+            if(!raw) return showToast('Lütfen JSON verisi giriniz.', 'error');
+            
+            let list;
+            try {
+                list = JSON.parse(raw);
+                if (!Array.isArray(list)) throw new Error('Root bir Array [] olmalıdır.');
+            } catch(e) {
+                return showToast('Hatalı JSON Formatı: ' + e.message, 'error');
+            }
+
+            let successCount = 0;
+            try {
+                for(let item of list) {
+                    item.eklenme_tarihi = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('sorular').add(item);
+                    successCount++;
+                }
+                showToast(successCount + ' adet soru başarıyla eklendi!', 'success');
+                document.getElementById('jsonBulkText').value = '';
+                loadQuestions();
+            } catch(e) {
+                showToast(successCount + ' soru eklendikten sonra hata oluştu: ' + e.message, 'error');
+            }
+        }
+
+        // Initialize on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            initData();
+            loadQuestions();
+        });
+
+    </script>
+</body>
+</html>

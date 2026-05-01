@@ -1,0 +1,71 @@
+{
+  "project_info": {
+    "project_number": "735538348786",
+    "firebase_url": "https://kaeru-kpss-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "kaeru-kpss",
+    "storage_bucket": "kaeru-kpss.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:735538348786:android:2d4c9d2e0c1273f715066b",
+        "android_client_info": {
+          "package_name": "com.kaeru.kpss"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "735538348786-l93iuc45g7baer1qk7laadfonkojno7k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kaeru.kpss",
+            "certificate_hash": "753508c240be6f9e4a8bf0d87c50b0119bdd6b7f"
+          }
+        },
+        {
+          "client_id": "735538348786-mlj730bmolqqdb250q955rt13pdqhhs9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kaeru.kpss",
+            "certificate_hash": "1555e8fb0ce7fda6492be8742e389eead2089197"
+          }
+        },
+        {
+          "client_id": "735538348786-oohd8veana2i68l5816ku7r1crneu7bn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kaeru.kpss",
+            "certificate_hash": "ecda7be88d22ef24a5a849d5cd397738db3ffa5b"
+          }
+        },
+        {
+          "client_id": "735538348786-j7ghdvd00kfu89o9hi7im2lhmac0ua5v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDADHvPRJ7-t41DI_gLRNCap2kA7YYiduM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "735538348786-j7ghdvd00kfu89o9hi7im2lhmac0ua5v.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "735538348786-2cihukfgr4q3a19tsa20qmipu8eepd0l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.kaeru.kpss"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
